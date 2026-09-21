@@ -1,0 +1,43 @@
+name: Build Mazinger Z Saturn Demo
+
+on:
+  push:
+    branches:
+      - feature/mazinger-level1-demo-r01
+    paths:
+      - 'mazinger_demo/**'
+      - '.github/workflows/mazinger-demo.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host gameplay tests
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -Imazinger_demo/include \
+            mazinger_demo/src/game.c mazinger_demo/tests/test_game.c \
+            -o /tmp/test_game
+          /tmp/test_game
+      - name: Build Saturn BIN/CUE with Yaul Docker
+        run: |
+          docker pull ijacquez/yaul:latest
+          docker run --rm \
+            -v "$PWD/mazinger_demo:/work" \
+            -w /work \
+            ijacquez/yaul:latest \
+            make -j2
+      - name: List outputs
+        run: find mazinger_demo -maxdepth 1 -type f -printf '%f\n' | sort
+      - name: Upload Saturn build
+        uses: actions/upload-artifact@v4
+        with:
+          name: mazinger-z-level1-r01-saturn
+          path: |
+            mazinger_demo/*.bin
+            mazinger_demo/*.cue
+            mazinger_demo/*.iso
+            mazinger_demo/*.elf
+            mazinger_demo/*.map
+          if-no-files-found: error
