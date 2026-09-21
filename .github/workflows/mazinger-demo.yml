@@ -20,7 +20,12 @@ jobs:
             mazinger_demo/src/game.c mazinger_demo/tests/test_game.c \
             -o /tmp/test_game
           /tmp/test_game
-      - name: Build Saturn BIN/CUE with Yaul Docker
+
+          cc -std=c11 -Wall -Wextra -Werror -Imazinger_demo/include \
+            mazinger_demo/src/game.c mazinger_demo/tests/test_full_stage.c \
+            -o /tmp/test_full_stage
+          /tmp/test_full_stage
+      - name: Build Saturn image with Yaul Docker
         run: |
           docker pull ijacquez/yaul:latest
           docker run --rm \
