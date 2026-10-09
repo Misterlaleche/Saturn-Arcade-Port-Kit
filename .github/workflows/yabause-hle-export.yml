@@ -1,0 +1,32 @@
+name: Open-source Saturn HLE test tools
+on:
+  push:
+    branches: [tooling/yaul-sdk-recovery-r01]
+    paths: ['.github/workflows/yabause-hle-export.yml']
+permissions:
+  contents: read
+jobs:
+  export-emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned open-source emulator, no BIOS or game content
+        run: |
+          mkdir -p out
+          git clone https://github.com/libretro/yabause.git emulator
+          git -C emulator checkout 8926b0c6c347f8c5c755911ddb0ac695420ffbf8
+          git -C emulator rev-parse HEAD > out/yabause-commit.txt
+          git -C emulator archive --format=tar.gz --prefix=yabause/ HEAD > out/yabause-source.tar.gz
+      - name: Build software-rendered libretro core
+        run: |
+          make -C emulator/yabause/src/libretro -j2 platform=unix ENABLE_CHD=0
+          cp emulator/yabause/src/libretro/yabause_libretro.so out/
+          ldd out/yabause_libretro.so > out/dependencies.txt
+          cd out && sha256sum *.so *.tar.gz > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yabause-hle-test-tools
+          path: out/
+          compression-level: 6
+          if-no-files-found: error
