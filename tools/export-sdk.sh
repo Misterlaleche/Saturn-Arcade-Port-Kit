@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-IMAGE="${YAUL_DOCKER_IMAGE:-ijacquez/yaul:latest}"
+IMAGE="${YAUL_DOCKER_IMAGE:-ijacquez/yaul@sha256:b6d272204767cd0a734139dd3a2ab298ef5912fb7b7224b78e6d9fac1a7825a6}"
 mkdir -p out
 # Resolve and record the image actually used; no assumed successful build.
 docker pull "$IMAGE"
@@ -13,17 +13,19 @@ docker run --rm --entrypoint /bin/bash -v "$PWD/out:/out" "$IMAGE" -lc '
   "$ROOT/bin/sh2eb-elf-gcc" -m2 -mb -ffreestanding -O2 -c /out/smoke.c -o /out/smoke.o
   "$ROOT/bin/sh2eb-elf-objdump" -f -d /out/smoke.o > /out/smoke-disassembly.txt
   test -f "$ROOT/share/build.pre.mk"
-  tar -C "$(dirname "$ROOT")" -chJf /out/yaul-c-sdk.tar.xz \
+  tar -C "$(dirname "$ROOT")" -chf /out/yaul-c-sdk.tar \
     --exclude="*/share/doc" --exclude="*/share/man" --exclude="*/share/info" \
     --exclude="*/include/c++" --exclude="*/cc1plus" --exclude="*gdb*" \
     --exclude="*libstdc++*" --exclude="*/sh2eb-elf-g++" --exclude="*/sh2eb-elf-c++" \
     "$(basename "$ROOT")"
   find "$ROOT" -name cc1 -exec ldd {} \; > /out/compiler-dependencies.txt || true
-  sha256sum /out/yaul-c-sdk.tar.xz /out/smoke.o > /out/SHA256SUMS.txt
 '
 # Split artifact payloads into transport-sized pieces. The manifest authenticates
 # the reconstructed archive. This does not alter compiler bytes.
 cd out
+# xz belongs to the runner, not the slim SDK container.
+xz -T2 yaul-c-sdk.tar
+sha256sum yaul-c-sdk.tar.xz smoke.o > SHA256SUMS.txt
 split --bytes=12000000 --numeric-suffixes=0 --suffix-length=2 yaul-c-sdk.tar.xz yaul-sdk.part-
 sha256sum yaul-sdk.part-* > PARTS-SHA256SUMS.txt
 ls -lh yaul-c-sdk.tar.xz yaul-sdk.part-*
