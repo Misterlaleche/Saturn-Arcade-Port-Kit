@@ -23,8 +23,8 @@ docker run --rm --entrypoint /bin/bash -v "$PWD/out:/out" "$IMAGE" -lc '
 # Split artifact payloads into transport-sized pieces. The manifest authenticates
 # the reconstructed archive. This does not alter compiler bytes.
 cd out
-# xz belongs to the runner, not the slim SDK container.
-xz -T2 yaul-c-sdk.tar
+# Stream compression avoids copying root-owned metadata to runner-owned output.
+xz -T2 -c yaul-c-sdk.tar > yaul-c-sdk.tar.xz
 sha256sum yaul-c-sdk.tar.xz smoke.o > SHA256SUMS.txt
 split --bytes=12000000 --numeric-suffixes=0 --suffix-length=2 yaul-c-sdk.tar.xz yaul-sdk.part-
 sha256sum yaul-sdk.part-* > PARTS-SHA256SUMS.txt
