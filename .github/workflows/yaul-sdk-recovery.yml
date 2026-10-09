@@ -1,0 +1,50 @@
+name: Yaul native C SDK recovery
+on:
+  push:
+    branches: [tooling/yaul-sdk-recovery-r01]
+    paths: ['.github/workflows/yaul-sdk-recovery.yml', 'tools/export-sdk.sh']
+permissions:
+  contents: read
+jobs:
+  export-sdk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Smoke-compile SH-2 and export official SDK
+        run: bash tools/export-sdk.sh
+      - name: Upload manifest and real compiler evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yaul-sdk-manifest
+          path: |
+            out/*.txt
+            out/*.json
+            out/smoke.c
+            out/smoke.o
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yaul-sdk-part-00
+          path: out/yaul-sdk.part-00
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yaul-sdk-part-01
+          path: out/yaul-sdk.part-01
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yaul-sdk-part-02
+          path: out/yaul-sdk.part-02
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yaul-sdk-part-03
+          path: out/yaul-sdk.part-03
+          compression-level: 0
+          if-no-files-found: ignore
